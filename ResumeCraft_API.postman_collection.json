@@ -1,0 +1,560 @@
+{
+  "info": {
+    "name": "ResumeCraft API",
+    "description": "Complete Postman collection for the ResumeCraft AI-Powered Resume Builder Backend.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "description": "User registration and login endpoints with Firebase and JWT.",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Registers a new user in Firebase and saves user details with default role 'user' in MongoDB."
+          }
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Authenticates user credentials against Firebase and returns a signed backend JWT token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resumes",
+      "description": "Resume CRUD and PDF generation endpoints with ownership protection.",
+      "item": [
+        {
+          "name": "Get All Resumes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resumes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resumes"]
+            },
+            "description": "Retrieves all resumes created by the authenticated user."
+          }
+        },
+        {
+          "name": "Get Resume by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resumes/{{resumeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resumes", "{{resumeId}}"]
+            },
+            "description": "Retrieves a specific resume by its MongoDB ID (ownership verified)."
+          }
+        },
+        {
+          "name": "Create Resume",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Full Stack Engineer Resume\",\n  \"template\": \"{{templateId}}\",\n  \"personalDetails\": {\n    \"fullName\": \"John Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"phone\": \"123-456-7890\",\n    \"location\": \"San Francisco, CA\"\n  },\n  \"summary\": \"Experienced developer skilled in building scalable web and cloud systems.\",\n  \"skills\": [\"Node.js\", \"Express\", \"MongoDB\", \"React\"],\n  \"experience\": [\n    {\n      \"company\": \"Acme Corp\",\n      \"role\": \"Backend Engineer\",\n      \"startDate\": \"2023-01-01\",\n      \"description\": \"Developed REST APIs and handled database architecture.\"\n    }\n  ],\n  \"education\": [\n    {\n      \"institution\": \"State University\",\n      \"degree\": \"B.S. in Computer Science\",\n      \"year\": 2022\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/resumes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resumes"]
+            },
+            "description": "Creates a new resume linked to a verified template and the authenticated user."
+          }
+        },
+        {
+          "name": "Update Resume",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Full Stack Engineer Resume\",\n  \"summary\": \"Updated summary emphasizing technical leadership and distributed systems.\",\n  \"skills\": [\"Node.js\", \"Express\", \"MongoDB\", \"React\", \"Docker\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/resumes/{{resumeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resumes", "{{resumeId}}"]
+            },
+            "description": "Updates an existing resume (ownership verified)."
+          }
+        },
+        {
+          "name": "Delete Resume",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resumes/{{resumeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resumes", "{{resumeId}}"]
+            },
+            "description": "Deletes an existing resume belonging to the authenticated user."
+          }
+        },
+        {
+          "name": "Download Resume PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/resumes/{{resumeId}}/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "resumes", "{{resumeId}}", "pdf"]
+            },
+            "description": "Generates and streams a binary PDF for the specified resume (ownership verified)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Templates",
+      "description": "Template discovery and administrative management endpoints.",
+      "item": [
+        {
+          "name": "Get All Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            },
+            "description": "Public endpoint to retrieve all available resume templates."
+          }
+        },
+        {
+          "name": "Get Template by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates", "{{templateId}}"]
+            },
+            "description": "Public endpoint to retrieve a specific template by its MongoDB ID."
+          }
+        },
+        {
+          "name": "Create Template",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Modern Minimalist\",\n  \"thumbnail\": \"https://example.com/thumbnails/modern.png\",\n  \"description\": \"Clean single-column template ideal for technical professionals.\",\n  \"layout\": \"single-column\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates"]
+            },
+            "description": "Admin-only endpoint to create a new resume template."
+          }
+        },
+        {
+          "name": "Update Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Modern Minimalist v2\",\n  \"description\": \"Updated typography and improved section padding.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates", "{{templateId}}"]
+            },
+            "description": "Admin-only endpoint to update an existing template."
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "description": "AI Suggestions and AI Tailoring records endpoints.",
+      "item": [
+        {
+          "name": "Create AI Suggestion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resume\": \"{{resumeId}}\",\n  \"input\": \"summary\",\n  \"suggestion\": \"Add quantifiable business results and strengthen action verbs.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "suggestions"]
+            },
+            "description": "Creates an AI suggestion record linked to an owned resume."
+          }
+        },
+        {
+          "name": "Get AI Suggestions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/suggestions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "suggestions"]
+            },
+            "description": "Retrieves all AI suggestions created for the authenticated user."
+          }
+        },
+        {
+          "name": "Create AI Tailor Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resume\": \"{{resumeId}}\",\n  \"jobDescription\": \"Seeking a Backend Engineer proficient in Node.js, Express, MongoDB, and Firebase.\",\n  \"tailoredResult\": \"Emphasize API scalability, database schema design, and cloud authentication.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/tailor",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "tailor"]
+            },
+            "description": "Creates an AI tailoring record comparing a job description against an owned resume."
+          }
+        },
+        {
+          "name": "Get AI Tailor Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/tailor",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "tailor"]
+            },
+            "description": "Retrieves all AI tailoring records created for the authenticated user."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sharing",
+      "description": "Public resume sharing and view endpoints.",
+      "item": [
+        {
+          "name": "Share Resume",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resume\": \"{{resumeId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/share",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "share"]
+            },
+            "description": "Generates a unique shareId and creates a public share record for the owned resume."
+          }
+        },
+        {
+          "name": "Get Shared Resume",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/share/{{shareId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "share", "{{shareId}}"]
+            },
+            "description": "Public endpoint to view a shared resume by its unique shareId."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Resume view and download analytics for the authenticated user.",
+      "item": [
+        {
+          "name": "Get View Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/views",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "views"]
+            },
+            "description": "Retrieves all view events recorded for the authenticated user's resumes."
+          }
+        },
+        {
+          "name": "Get Download Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/downloads",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "downloads"]
+            },
+            "description": "Retrieves all download events recorded for the authenticated user's resumes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Platform-wide administration endpoints restricted to admin users.",
+      "item": [
+        {
+          "name": "Get Admin Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/templates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "templates"]
+            },
+            "description": "Admin-only endpoint to inspect all templates in the database."
+          }
+        },
+        {
+          "name": "Get Admin Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "analytics"]
+            },
+            "description": "Admin-only endpoint to inspect all analytics records across the entire platform."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Firebase push notifications dispatch endpoint.",
+      "item": [
+        {
+          "name": "Send Push Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firebaseUid\": \"{{firebaseUid}}\",\n  \"title\": \"Resume Review Complete\",\n  \"body\": \"Your resume suggestions are ready for review.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "send"]
+            },
+            "description": "Sends a Firebase push notification via Firebase Admin Messaging targeting a user's topic (firebaseUid)."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resumeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "templateId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shareId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "firebaseUid",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
