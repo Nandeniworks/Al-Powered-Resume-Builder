@@ -1,4 +1,5 @@
 import React from 'react';
+import { normalizeUrl, cleanDisplayUrl } from '../utils/urlUtils';
 
 export default function A4ResumePreview({ data, styleType }) {
   // Use resume's saved style if not explicitly passed
@@ -65,14 +66,14 @@ export default function A4ResumePreview({ data, styleType }) {
     achievements.length > 0 ||
     hasAdditional;
 
-  // Build clean contact items list
+  // Build clean, functional contact items list
   const contactItems = [];
-  if (email) contactItems.push(email);
-  if (phone) contactItems.push(phone);
-  if (location) contactItems.push(location);
-  if (linkedin) contactItems.push(linkedin);
-  if (github) contactItems.push(github);
-  if (portfolio) contactItems.push(portfolio);
+  if (email) contactItems.push({ type: 'email', label: email, href: `mailto:${email}` });
+  if (phone) contactItems.push({ type: 'phone', label: phone, href: `tel:${phone.replace(/[^+\d]/g, '')}` });
+  if (location) contactItems.push({ type: 'text', label: location, href: null });
+  if (linkedin) contactItems.push({ type: 'link', label: cleanDisplayUrl(linkedin), href: normalizeUrl(linkedin) });
+  if (github) contactItems.push({ type: 'link', label: cleanDisplayUrl(github), href: normalizeUrl(github) });
+  if (portfolio) contactItems.push({ type: 'link', label: cleanDisplayUrl(portfolio), href: normalizeUrl(portfolio) });
 
   return (
     <div
@@ -199,7 +200,24 @@ export default function A4ResumePreview({ data, styleType }) {
                   >
                     {contactItems.map((item, idx) => (
                       <React.Fragment key={idx}>
-                        <span>{item}</span>
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            target={item.type === 'link' ? '_blank' : undefined}
+                            rel={item.type === 'link' ? 'noopener noreferrer' : undefined}
+                            style={{
+                              color: item.type === 'link' ? 'var(--color-burgundy, #4D0E13)' : '#4A4A4A',
+                              textDecoration: 'none',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <span>{item.label}</span>
+                        )}
                         {idx < contactItems.length - 1 && <span style={{ color: '#999' }}>•</span>}
                       </React.Fragment>
                     ))}
@@ -345,9 +363,22 @@ export default function A4ResumePreview({ data, styleType }) {
                           {proj.name || 'Project Name'}
                         </span>
                         {proj.link && (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--color-burgundy, #4D0E13)' }}>
-                            {proj.link}
-                          </span>
+                          <a
+                            href={normalizeUrl(proj.link)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              fontSize: '0.8rem',
+                              color: 'var(--color-burgundy, #4D0E13)',
+                              textDecoration: 'none',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            {cleanDisplayUrl(proj.link)} ↗
+                          </a>
                         )}
                       </div>
                       {proj.technologies && (
@@ -584,8 +615,27 @@ export default function A4ResumePreview({ data, styleType }) {
                       lineHeight: 1.55,
                     }}
                   >
-                    {contactItems.map((c, i) => (
-                      <div key={i}>{c}</div>
+                    {contactItems.map((item, i) => (
+                      <div key={i}>
+                        {item.href ? (
+                          <a
+                            href={item.href}
+                            target={item.type === 'link' ? '_blank' : undefined}
+                            rel={item.type === 'link' ? 'noopener noreferrer' : undefined}
+                            style={{
+                              color: item.type === 'link' ? 'var(--color-burgundy, #4D0E13)' : 'inherit',
+                              textDecoration: 'none',
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <span>{item.label}</span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -784,8 +834,28 @@ export default function A4ResumePreview({ data, styleType }) {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {projects.map((proj, idx) => (
                         <div key={idx}>
-                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#24191A' }}>
-                            {proj.name || 'Project'}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#24191A' }}>
+                              {proj.name || 'Project'}
+                            </div>
+                            {proj.link && (
+                              <a
+                                href={normalizeUrl(proj.link)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: '0.74rem',
+                                  color: 'var(--color-burgundy, #4D0E13)',
+                                  textDecoration: 'none',
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+                                onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+                              >
+                                {cleanDisplayUrl(proj.link)} ↗
+                              </a>
+                            )}
                           </div>
                           {proj.technologies && (
                             <div style={{ fontSize: '0.76rem', color: 'var(--color-burgundy, #4D0E13)', marginTop: '0.1rem' }}>

@@ -20,6 +20,10 @@ const tailorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    targetRole: {
+      type: String,
+      default: '',
+    },
     newResume: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Resume',

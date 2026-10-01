@@ -76,7 +76,7 @@ export default function TailorPage() {
         setEditedTitle(response.suggestedTitle || `${response.originalTitle} - ${response.targetRole}`);
         setNotification({
           type: 'success',
-          message: '✦ Tailored preview generated successfully! Review the tailored version below before saving.',
+          message: `✦ AI tailored version generated for "${response.targetRole}"! Review the substantive content enhancements below before saving.`,
         });
       } else {
         throw new Error('AI tailoring response was empty.');
@@ -106,9 +106,9 @@ export default function TailorPage() {
         tailoredData.template?._id ||
         tailoredData.template;
 
-      const finalTitle = editedTitle.trim() || tailoredData.suggestedTitle || `${origResume?.title || 'Resume'} - Tailored`;
+      const finalTitle = editedTitle.trim() || tailoredData.suggestedTitle || `${origResume?.title || 'Resume'} - ${tailoredData.targetRole}`;
 
-      // 1. Create a brand NEW Resume document in MongoDB
+      // 1. Create brand NEW Resume document in MongoDB
       const newResumePayload = {
         title: finalTitle,
         template: templateId,
@@ -125,10 +125,11 @@ export default function TailorPage() {
 
       const createdResume = await api.post('/api/resumes', newResumePayload);
 
-      // 2. Save Tailor record in MongoDB referencing original resume and new resume
+      // 2. Save Tailor record in MongoDB referencing original resume, target role, and new resume
       await api.post('/api/ai/tailor', {
         resume: selectedResumeId,
         jobDescription: jobDescription.trim(),
+        targetRole: tailoredData.targetRole,
         tailoredResult: tailoredData.tailoringSummary || `Tailored for ${tailoredData.targetRole}`,
         newResume: createdResume._id,
       });
@@ -138,7 +139,7 @@ export default function TailorPage() {
       setJobDescription('');
       setNotification({
         type: 'success',
-        message: `Saved "${finalTitle}" as a new resume in MongoDB! Original resume "${origResume?.title}" remains unchanged.`,
+        message: `Saved "${finalTitle}" as a new resume in MongoDB! Original resume "${origResume?.title}" remains completely unchanged.`,
         newResumeId: createdResume._id,
         newResumeTitle: finalTitle,
       });
@@ -160,7 +161,7 @@ export default function TailorPage() {
     setTailoredData(null);
     setNotification({
       type: 'info',
-      message: 'Original resume kept unchanged. Tailored preview was discarded.',
+      message: 'Original resume kept completely unchanged. Tailored preview was discarded.',
     });
   };
 
@@ -218,11 +219,11 @@ export default function TailorPage() {
               fontSize: '0.98rem',
               color: 'var(--color-text-muted, #7A6F6D)',
               marginTop: '0.5rem',
-              maxWidth: '680px',
+              maxWidth: '720px',
               lineHeight: 1.55,
             }}
           >
-            Select an existing resume and paste a target job description. Gemini AI realigns your genuine experience and keywords to target the role without fabricating facts or modifying your original resume.
+            Select an existing resume and paste a target job description. Gemini AI thoroughly tailors your professional title, summary, experience descriptions, project highlights, and skills to target the role — without inventing facts or modifying your original resume.
           </p>
         </div>
 
@@ -262,7 +263,7 @@ export default function TailorPage() {
                   textDecoration: 'underline',
                 }}
               >
-                Open New Resume in Studio →
+                Open New Tailored Resume in Studio →
               </Link>
             )}
           </div>
@@ -271,12 +272,12 @@ export default function TailorPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
             gap: '2.5rem',
             alignItems: 'start',
           }}
         >
-          {/* LEFT COLUMN: Input Form & AI Tailored Preview */}
+          {/* LEFT COLUMN: Input Form & Detailed AI Tailored Preview */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* Input Form Card */}
             <div
@@ -357,7 +358,7 @@ export default function TailorPage() {
                     </select>
                     {selectedBaseResume && (
                       <div style={{ fontSize: '0.76rem', color: 'var(--color-text-muted, #7A6F6D)', marginTop: '0.35rem' }}>
-                        Original candidate: <strong>{selectedBaseResume.personalDetails?.fullName || 'Untitled'}</strong> • {selectedBaseResume.experience?.length || 0} work positions • {selectedBaseResume.skills?.length || 0} skills
+                        Candidate: <strong>{selectedBaseResume.personalDetails?.fullName || 'Untitled'}</strong> • Current Title: <strong>{selectedBaseResume.personalDetails?.professionalTitle || 'None'}</strong> • {selectedBaseResume.experience?.length || 0} work positions • {selectedBaseResume.projects?.length || 0} projects
                       </div>
                     )}
                   </div>
@@ -382,7 +383,7 @@ export default function TailorPage() {
                     </div>
                     <textarea
                       rows={6}
-                      placeholder="Paste the target job description, key responsibilities, preferred technologies, and company requirements here..."
+                      placeholder="e.g. UI/UX Developer looking for experience with interactive interfaces, responsive design, frontend development, user-focused applications, and collaborative design implementation..."
                       value={jobDescription}
                       onChange={(e) => setJobDescription(e.target.value)}
                       required
@@ -435,7 +436,7 @@ export default function TailorPage() {
                             animation: 'spin 0.8s linear infinite',
                           }}
                         />
-                        ALIGNING WITH GEMINI AI...
+                        ANALYZING & TAILORING RESUME...
                       </>
                     ) : (
                       '✦ TAILOR WITH AI'
@@ -496,7 +497,7 @@ export default function TailorPage() {
                         fontWeight: 700,
                       }}
                     >
-                      Review Targeted Version
+                      Tailored for {tailoredData.targetRole}
                     </h3>
                   </div>
 
@@ -505,7 +506,7 @@ export default function TailorPage() {
                   </div>
                 </div>
 
-                {/* Tailoring Summary Notice */}
+                {/* Tailoring Summary Strategy */}
                 {tailoredData.tailoringSummary && (
                   <div
                     style={{
@@ -558,39 +559,62 @@ export default function TailorPage() {
                     }}
                   />
                   <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted, #7A6F6D)', marginTop: '0.25rem' }}>
-                    This will be saved as a separate document in MongoDB without altering the original.
+                    Will be created as a new document in MongoDB. The original resume is never overwritten.
                   </div>
                 </div>
 
-                {/* Section Preview: Professional Title & Summary */}
+                {/* 1. PROFESSIONAL TITLE COMPARISON */}
                 <div
                   style={{
                     backgroundColor: '#FAF7F4',
                     borderRadius: '8px',
-                    padding: '1.25rem',
+                    padding: '1.15rem',
                     marginBottom: '1.25rem',
                   }}
                 >
-                  <div style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em' }}>
-                    Target Role / Professional Title
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em' }}>
+                      Professional Title
+                    </span>
+                    {tailoredData.originalContent?.professionalTitle && (
+                      <span style={{ fontSize: '0.72rem', color: '#888' }}>
+                        Original: {tailoredData.originalContent.professionalTitle}
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-burgundy, #4D0E13)', margin: '0.25rem 0 0.85rem' }}>
+                  <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-burgundy, #4D0E13)' }}>
                     {tailoredData.tailoredResume?.personalDetails?.professionalTitle || tailoredData.targetRole}
                   </div>
-
-                  <div style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em' }}>
-                    Tailored Professional Summary
-                  </div>
-                  <p style={{ fontSize: '0.88rem', lineHeight: 1.6, color: '#24191A', margin: '0.25rem 0 0' }}>
-                    {tailoredData.tailoredResume?.personalDetails?.summary}
-                  </p>
                 </div>
 
-                {/* Section Preview: Prioritized Skills */}
+                {/* 2. PROFESSIONAL SUMMARY COMPARISON */}
+                <div
+                  style={{
+                    backgroundColor: '#FAF7F4',
+                    borderRadius: '8px',
+                    padding: '1.15rem',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <div style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em', marginBottom: '0.4rem' }}>
+                    Tailored Professional Summary (Repositioned for target job)
+                  </div>
+                  <p style={{ fontSize: '0.88rem', lineHeight: 1.6, color: '#24191A', margin: 0, fontWeight: 500 }}>
+                    {tailoredData.tailoredResume?.personalDetails?.summary}
+                  </p>
+                  {tailoredData.originalContent?.summary && (
+                    <div style={{ marginTop: '0.65rem', paddingTop: '0.5rem', borderTop: '1px dashed rgba(216, 196, 172, 0.6)', fontSize: '0.78rem', color: '#777', lineHeight: 1.45 }}>
+                      <span style={{ fontWeight: 600 }}>Original Summary: </span>
+                      {tailoredData.originalContent.summary}
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. PRIORITIZED SKILLS */}
                 {Array.isArray(tailoredData.tailoredResume?.skills) && tailoredData.tailoredResume.skills.length > 0 && (
                   <div style={{ marginBottom: '1.25rem' }}>
                     <div style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em', marginBottom: '0.45rem' }}>
-                      Prioritized Skills (Genuine candidate skills ordered for target job)
+                      Prioritized Skills (Ordered for relevance to {tailoredData.targetRole})
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                       {tailoredData.tailoredResume.skills.map((s, idx) => (
@@ -612,20 +636,43 @@ export default function TailorPage() {
                   </div>
                 )}
 
-                {/* Section Preview: Tailored Experience Highlights */}
+                {/* 4. TAILORED EXPERIENCE */}
                 {Array.isArray(tailoredData.tailoredResume?.experience) && tailoredData.tailoredResume.experience.length > 0 && (
-                  <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ marginBottom: '1.25rem' }}>
                     <div style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
-                      Tailored Experience Descriptions
+                      Tailored Experience (Enhanced with relevant action verbs & responsibilities)
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                       {tailoredData.tailoredResume.experience.map((exp, idx) => (
-                        <div key={idx} style={{ borderLeft: '2px solid rgba(216, 196, 172, 0.7)', paddingLeft: '0.75rem' }}>
+                        <div key={idx} style={{ borderLeft: '2.5px solid var(--color-burgundy, #4D0E13)', paddingLeft: '0.85rem', backgroundColor: '#FAF7F4', padding: '0.75rem', borderRadius: '4px' }}>
                           <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-main, #24191A)' }}>
                             {exp.role} <span style={{ fontWeight: 500, color: '#666' }}>| {exp.company}</span>
+                            {exp.duration && <span style={{ float: 'right', fontSize: '0.76rem', color: '#888' }}>{exp.duration}</span>}
                           </div>
-                          <p style={{ fontSize: '0.84rem', lineHeight: 1.5, color: '#3A3A3A', margin: '0.25rem 0 0' }}>
+                          <p style={{ fontSize: '0.84rem', lineHeight: 1.5, color: '#3A3A3A', margin: '0.35rem 0 0' }}>
                             {exp.description}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. TAILORED PROJECTS */}
+                {Array.isArray(tailoredData.tailoredResume?.projects) && tailoredData.tailoredResume.projects.length > 0 && (
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ fontSize: '0.74rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted, #7A6F6D)', letterSpacing: '0.06em', marginBottom: '0.65rem' }}>
+                      Tailored Projects (Emphasizing relevant design, features & technologies)
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {tailoredData.tailoredResume.projects.map((proj, idx) => (
+                        <div key={idx} style={{ borderLeft: '2.5px solid var(--color-sand, #D8C4AC)', paddingLeft: '0.85rem', backgroundColor: '#FAF7F4', padding: '0.75rem', borderRadius: '4px' }}>
+                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-main, #24191A)' }}>
+                            {proj.name}
+                            {proj.technologies && <span style={{ fontSize: '0.76rem', color: 'var(--color-burgundy, #4D0E13)', marginLeft: '0.4rem', fontWeight: 600 }}>({proj.technologies})</span>}
+                          </div>
+                          <p style={{ fontSize: '0.84rem', lineHeight: 1.5, color: '#3A3A3A', margin: '0.35rem 0 0' }}>
+                            {proj.description}
                           </p>
                         </div>
                       ))}
@@ -750,7 +797,7 @@ export default function TailorPage() {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'baseline',
-                          marginBottom: '0.5rem',
+                          marginBottom: '0.45rem',
                         }}
                       >
                         <span
@@ -768,6 +815,24 @@ export default function TailorPage() {
                           {createdDate}
                         </span>
                       </div>
+
+                      {/* Target Role Tag */}
+                      {item.targetRole && (
+                        <div style={{ marginBottom: '0.5rem' }}>
+                          <span
+                            style={{
+                              backgroundColor: 'rgba(77, 14, 19, 0.08)',
+                              color: 'var(--color-burgundy, #4D0E13)',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              padding: '0.2rem 0.5rem',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            🎯 Target: {item.targetRole}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Target Job snippet */}
                       <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-muted, #7A6F6D)', textTransform: 'uppercase', marginBottom: '0.2rem' }}>

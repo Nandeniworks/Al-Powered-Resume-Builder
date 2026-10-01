@@ -54,35 +54,37 @@ const getSuggestions = async (req, res) => {
   }
 };
 
-const TAILOR_SYSTEM_INSTRUCTION = `You are an expert executive resume strategist and ATS optimization specialist.
-Your task is to tailor an existing candidate's resume specifically to match a target job description.
+const TAILOR_SYSTEM_INSTRUCTION = `You are an elite executive resume tailoring strategist and ATS optimization expert.
+Your mission is to perform a comprehensive, high-impact tailoring of the candidate's resume specifically for the target job description.
 
-CRITICAL INTEGRITY & ANTI-HALLUCINATION RULES:
-1. NEVER invent, fabricate, or hallucinate:
-   - skills
-   - jobs or companies
-   - degrees or institutions
-   - certifications or issuers
-   - projects
-   - achievements
-   - years of experience
-   - technologies or tools
-2. You can ONLY reorganize, elevate, emphasize, or rephrase information that ALREADY exists in the candidate's original resume.
-3. For Skills: Only select and prioritize relevant skills that already exist in the candidate's original skills list. DO NOT add any skill the candidate did not list.
-4. For Professional Title: Align the candidate's professional title to reflect the target role (e.g., if the target is "UI/UX Designer", use "UI/UX Designer").
-5. For Professional Summary: Rewrite the summary to directly address the requirements, keywords, and tone of the target job description using ONLY facts from the candidate's genuine background.
-6. For Experience: Rewrite/polish descriptions and bullet points to highlight relevance to the target job description. Preserve exact company names, roles, and dates.
-7. For Projects: Rephrase descriptions to emphasize aspects most relevant to the target job description. Preserve exact project names, links, and genuine technologies.
-8. Retain all genuine Education, Certifications, Achievements, and Additional Information.
-9. Extract a concise target role title (e.g., "UI/UX Designer") from the job description.
-10. Generate a suggested new resume title in the format: "<Original Resume Title> - <Target Role>" (e.g., "First - UI/UX Designer").
-11. Write a 1-2 sentence tailoring summary explaining how the resume was aligned for this position.
+MANDATORY TAILORING DIRECTIVES:
+1. DO NOT simply change the title or rename sections. You must perform SUBSTANTIVE, MEANINGFUL REWRITING across all content areas.
+2. TARGET ROLE & PROFESSIONAL TITLE:
+   - Extract the exact target job title from the job description (e.g. "UI/UX Developer").
+   - Set personalDetails.professionalTitle to this target title (e.g. "UI/UX Developer").
+   - Set suggestedTitle to "<Original Resume Title> - <Target Role>" (e.g. "First - UI/UX Developer").
+3. PROFESSIONAL SUMMARY:
+   - Completely rewrite the professional summary to position the candidate as a high-impact fit for this target role.
+   - Highlight the candidate's genuine experience with interactive interfaces, responsive design, frontend technologies, user-focused applications, or target requirements based strictly on their real background.
+4. EXPERIENCE DESCRIPTIONS:
+   - Actively rewrite each experience entry's description. Highlight relevant user-facing contributions, responsive layouts, frontend engineering, and cross-functional collaboration.
+   - Use high-impact action verbs. Preserve exact real company names, roles, and dates.
+5. PROJECT DESCRIPTIONS:
+   - Rewrite project descriptions to emphasize user experience, interface design, interactive components, responsive web standards, and genuine technologies used.
+6. SKILLS:
+   - Prioritize and reorder the candidate's skills so the most relevant skills appear at the very beginning of the list.
+   - DO NOT invent skills the candidate does not have (e.g. do not add Figma or tools unless already present).
+7. CERTIFICATIONS & ACHIEVEMENTS:
+   - Highlight and prioritize credentials relevant to the target job.
+8. STRICT ANTI-HALLUCINATION RULES:
+   - DO NOT invent fake companies, fake job titles, fake degrees, fake universities, fake certifications, fake projects, or fake tools.
+   - Only elevate, reorganize, rewrite, and emphasize facts and tools from the candidate's authentic background.
 
-Return ONLY a valid JSON object matching this exact schema:
+You MUST output ONLY a valid JSON object matching this schema:
 {
   "targetRole": "string",
   "suggestedTitle": "string",
-  "tailoringSummary": "string",
+  "tailoringSummary": "Concise 2-sentence summary of how the resume content was tailored for this target role",
   "tailoredResume": {
     "personalDetails": {
       "fullName": "string",
@@ -142,7 +144,7 @@ Return ONLY a valid JSON object matching this exact schema:
 // POST /api/ai/tailor - Generate AI tailored resume OR save tailoring record
 const createTailor = async (req, res) => {
   try {
-    const { resume, resumeId, jobDescription, tailoredResult, newResume, action } = req.body;
+    const { resume, resumeId, jobDescription, tailoredResult, newResume, targetRole: userTargetRole, action } = req.body;
     const targetResumeId = resume || resumeId;
 
     // 1. Validate required fields
@@ -180,6 +182,9 @@ const createTailor = async (req, res) => {
         jobDescription: jobDescription.trim(),
         tailoredResult: tailoredResult.trim(),
       };
+      if (userTargetRole) {
+        tailorData.targetRole = userTargetRole.trim();
+      }
       if (newResume && mongoose.Types.ObjectId.isValid(newResume)) {
         tailorData.newResume = newResume;
       }
@@ -226,7 +231,7 @@ const createTailor = async (req, res) => {
       additionalInfo: existingResume.additionalInfo || {},
     };
 
-    const prompt = `ORIGINAL RESUME DATA:\n${JSON.stringify(cleanResumeForPrompt, null, 2)}\n\nTARGET JOB DESCRIPTION:\n${jobDescription.trim()}`;
+    const prompt = `CANDIDATE'S ORIGINAL RESUME:\n${JSON.stringify(cleanResumeForPrompt, null, 2)}\n\nTARGET JOB DESCRIPTION:\n${jobDescription.trim()}`;
 
     const ai = new GoogleGenAI({ apiKey });
 
@@ -237,7 +242,7 @@ const createTailor = async (req, res) => {
         config: {
           systemInstruction: TAILOR_SYSTEM_INSTRUCTION,
           responseMimeType: 'application/json',
-          temperature: 0.2,
+          temperature: 0.3,
         },
       });
       const textOutput = response?.text?.trim();
@@ -286,6 +291,11 @@ const createTailor = async (req, res) => {
       suggestedTitle = `${existingResume.title} - ${targetRole}`;
     }
 
+    // Ensure tailored professionalTitle is set
+    if (!generatedData.tailoredResume.personalDetails.professionalTitle || generatedData.tailoredResume.personalDetails.professionalTitle === existingResume.personalDetails?.professionalTitle) {
+      generatedData.tailoredResume.personalDetails.professionalTitle = targetRole;
+    }
+
     return res.status(200).json({
       success: true,
       originalResumeId: existingResume._id,
@@ -295,6 +305,14 @@ const createTailor = async (req, res) => {
       targetRole,
       suggestedTitle,
       tailoringSummary: generatedData.tailoringSummary || `Tailored for ${targetRole}`,
+      originalContent: {
+        title: existingResume.title,
+        professionalTitle: existingResume.personalDetails?.professionalTitle || '',
+        summary: existingResume.personalDetails?.summary || '',
+        experience: existingResume.experience || [],
+        projects: existingResume.projects || [],
+        skills: existingResume.skills || [],
+      },
       tailoredResume: generatedData.tailoredResume,
     });
   } catch (error) {

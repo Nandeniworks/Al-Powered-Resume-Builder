@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import Navbar from '../components/Navbar';
 import A4ResumePreview from '../components/A4ResumePreview';
 import { api } from '../services/api';
+import { normalizeUrl, isValidUrl } from '../utils/urlUtils';
 
 // Helper to resize and convert uploaded image files to lightweight Base64 data URLs
 function processImageFile(file, maxWidth = 350, maxHeight = 350, quality = 0.85) {
@@ -458,12 +459,38 @@ export default function ResumeBuilderPage() {
     setSaving(true);
     setNotification('');
 
+    // Validate URLs before submission
+    const pd = formData.personalDetails;
+    if (pd.linkedin && !isValidUrl(pd.linkedin)) {
+      setNotification('Please enter a valid URL for LinkedIn (e.g. linkedin.com/in/... or https://...)');
+      setSaving(false);
+      return;
+    }
+    if (pd.github && !isValidUrl(pd.github)) {
+      setNotification('Please enter a valid URL for GitHub (e.g. github.com/... or https://...)');
+      setSaving(false);
+      return;
+    }
+    if (pd.portfolio && !isValidUrl(pd.portfolio)) {
+      setNotification('Please enter a valid URL for Portfolio (e.g. portfolio.dev or https://...)');
+      setSaving(false);
+      return;
+    }
+    for (let i = 0; i < formData.projects.length; i++) {
+      const p = formData.projects[i];
+      if (p.link && !isValidUrl(p.link)) {
+        setNotification(`Please enter a valid URL for Project #${i + 1} link (e.g. https://...)`);
+        setSaving(false);
+        return;
+      }
+    }
+
     let currentTemplate = formData.template;
     if (!currentTemplate && templates.length > 0) {
       currentTemplate = templates[0]._id;
     }
 
-    // Complete payload storing all sections in MongoDB
+    // Complete payload storing all sections in MongoDB with normalized URLs
     const payload = {
       title: (formData.title || 'Untitled Resume').trim(),
       template: currentTemplate,
@@ -473,15 +500,22 @@ export default function ResumeBuilderPage() {
         email: formData.personalDetails.email || '',
         phone: formData.personalDetails.phone || '',
         location: formData.personalDetails.location || '',
-        linkedin: formData.personalDetails.linkedin || '',
-        github: formData.personalDetails.github || '',
-        portfolio: formData.personalDetails.portfolio || '',
+        linkedin: normalizeUrl(formData.personalDetails.linkedin),
+        github: normalizeUrl(formData.personalDetails.github),
+        portfolio: normalizeUrl(formData.personalDetails.portfolio),
         summary: formData.personalDetails.summary || '',
         photo: formData.personalDetails.photo || '',
       },
       education: formData.education.filter((e) => e.institution || e.degree || e.year),
       experience: formData.experience.filter((e) => e.company || e.role || e.duration || e.description),
-      projects: formData.projects.filter((p) => p.name || p.technologies || p.description || p.link),
+      projects: formData.projects
+        .filter((p) => p.name || p.technologies || p.description || p.link)
+        .map((p) => ({
+          name: p.name || '',
+          technologies: p.technologies || '',
+          description: p.description || '',
+          link: normalizeUrl(p.link),
+        })),
       skills: formData.skills.filter((s) => typeof s === 'string' && s.trim()),
       certifications: formData.certifications
         .filter((c) => c.name || c.issuer || c.year || c.image)
@@ -599,7 +633,7 @@ export default function ResumeBuilderPage() {
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Software Engineer Resume"
+              placeholder="Resume title"
               style={{
                 fontFamily: 'var(--font-serif)',
                 fontSize: '1.15rem',
@@ -907,7 +941,7 @@ export default function ResumeBuilderPage() {
                     type="text"
                     value={formData.personalDetails.fullName}
                     onChange={(e) => handlePersonalChange('fullName', e.target.value)}
-                    placeholder="e.g. Nandeni Tiwari"
+                    placeholder="Full name"
                   />
                 </div>
 
@@ -919,7 +953,7 @@ export default function ResumeBuilderPage() {
                     type="text"
                     value={formData.personalDetails.professionalTitle}
                     onChange={(e) => handlePersonalChange('professionalTitle', e.target.value)}
-                    placeholder="e.g. Full Stack Developer / Software Engineer"
+                    placeholder="Professional title"
                   />
                 </div>
 
@@ -932,7 +966,7 @@ export default function ResumeBuilderPage() {
                       type="email"
                       value={formData.personalDetails.email}
                       onChange={(e) => handlePersonalChange('email', e.target.value)}
-                      placeholder="e.g. candidate@example.com"
+                      placeholder="email@example.com"
                     />
                   </div>
                   <div>
@@ -943,7 +977,7 @@ export default function ResumeBuilderPage() {
                       type="text"
                       value={formData.personalDetails.phone}
                       onChange={(e) => handlePersonalChange('phone', e.target.value)}
-                      placeholder="e.g. +91 98765 43210"
+                      placeholder="Phone number"
                     />
                   </div>
                 </div>
@@ -956,7 +990,7 @@ export default function ResumeBuilderPage() {
                     type="text"
                     value={formData.personalDetails.location}
                     onChange={(e) => handlePersonalChange('location', e.target.value)}
-                    placeholder="e.g. Mumbai, India"
+                    placeholder="City, Country"
                   />
                 </div>
 
@@ -969,7 +1003,13 @@ export default function ResumeBuilderPage() {
                       type="text"
                       value={formData.personalDetails.linkedin}
                       onChange={(e) => handlePersonalChange('linkedin', e.target.value)}
-                      placeholder="linkedin.com/in/username"
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v && isValidUrl(v)) {
+                          handlePersonalChange('linkedin', normalizeUrl(v));
+                        }
+                      }}
+                      placeholder="https://..."
                     />
                   </div>
                   <div>
@@ -980,7 +1020,13 @@ export default function ResumeBuilderPage() {
                       type="text"
                       value={formData.personalDetails.github}
                       onChange={(e) => handlePersonalChange('github', e.target.value)}
-                      placeholder="github.com/username"
+                      onBlur={(e) => {
+                        const v = e.target.value.trim();
+                        if (v && isValidUrl(v)) {
+                          handlePersonalChange('github', normalizeUrl(v));
+                        }
+                      }}
+                      placeholder="https://..."
                     />
                   </div>
                 </div>
@@ -993,7 +1039,13 @@ export default function ResumeBuilderPage() {
                     type="text"
                     value={formData.personalDetails.portfolio}
                     onChange={(e) => handlePersonalChange('portfolio', e.target.value)}
-                    placeholder="portfolio.dev"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v && isValidUrl(v)) {
+                        handlePersonalChange('portfolio', normalizeUrl(v));
+                      }
+                    }}
+                    placeholder="https://..."
                   />
                 </div>
               </div>
@@ -1048,7 +1100,7 @@ export default function ResumeBuilderPage() {
                   rows={6}
                   value={formData.personalDetails.summary}
                   onChange={(e) => handlePersonalChange('summary', e.target.value)}
-                  placeholder="e.g. Enthusiastic Computer Science student with hands-on experience building scalable web applications and REST APIs using React and Node.js. Passionate about clean code and modern system architecture..."
+                  placeholder="Write your professional summary..."
                 />
               </div>
             </div>
@@ -1112,19 +1164,19 @@ export default function ResumeBuilderPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <input
                           type="text"
-                          placeholder="Degree / Major (e.g. B.Tech Computer Science)"
+                          placeholder="Degree / Major"
                           value={edu.degree}
                           onChange={(e) => handleEduChange(idx, 'degree', e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Institution / University (e.g. ITM Skills University)"
+                          placeholder="Institution / University"
                           value={edu.institution}
                           onChange={(e) => handleEduChange(idx, 'institution', e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Year / Duration (e.g. 2025–2029)"
+                          placeholder="Year / Duration"
                           value={edu.year}
                           onChange={(e) => handleEduChange(idx, 'year', e.target.value)}
                         />
@@ -1195,19 +1247,19 @@ export default function ResumeBuilderPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <input
                           type="text"
-                          placeholder="Job Title / Role (e.g. Software Developer Intern)"
+                          placeholder="Job title / Role"
                           value={exp.role}
                           onChange={(e) => handleExpChange(idx, 'role', e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Company / Organization (e.g. Tech Labs)"
+                          placeholder="Company / Organization"
                           value={exp.company}
                           onChange={(e) => handleExpChange(idx, 'company', e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Duration / Dates (e.g. June 2024 – Present)"
+                          placeholder="Duration / Dates"
                           value={exp.duration}
                           onChange={(e) => handleExpChange(idx, 'duration', e.target.value)}
                         />
@@ -1245,7 +1297,7 @@ export default function ResumeBuilderPage() {
                           </div>
                           <textarea
                             rows={3}
-                            placeholder="e.g. Built RESTful APIs using Express and Node.js. Implemented authentication and optimized database queries."
+                            placeholder="Describe your responsibilities and achievements..."
                             value={exp.description}
                             onChange={(e) => handleExpChange(idx, 'description', e.target.value)}
                           />
@@ -1317,21 +1369,27 @@ export default function ResumeBuilderPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <input
                           type="text"
-                          placeholder="Project Name (e.g. ResumeCraft Studio)"
+                          placeholder="Project name"
                           value={proj.name}
                           onChange={(e) => handleProjChange(idx, 'name', e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Technologies (e.g. React, Node.js, Express, MongoDB)"
+                          placeholder="Technologies used"
                           value={proj.technologies}
                           onChange={(e) => handleProjChange(idx, 'technologies', e.target.value)}
                         />
                         <input
                           type="text"
-                          placeholder="Project Link (e.g. github.com/user/project or live demo)"
+                          placeholder="https://..."
                           value={proj.link}
                           onChange={(e) => handleProjChange(idx, 'link', e.target.value)}
+                          onBlur={(e) => {
+                            const v = e.target.value.trim();
+                            if (v && isValidUrl(v)) {
+                              handleProjChange(idx, 'link', normalizeUrl(v));
+                            }
+                          }}
                         />
 
                         {/* Description with Inline AI Improve Button */}
@@ -1367,7 +1425,7 @@ export default function ResumeBuilderPage() {
                           </div>
                           <textarea
                             rows={3}
-                            placeholder="e.g. Built an editorial resume platform with real-time A4 preview and inline AI assistance."
+                            placeholder="Describe the project..."
                             value={proj.description}
                             onChange={(e) => handleProjChange(idx, 'description', e.target.value)}
                           />
@@ -1394,7 +1452,7 @@ export default function ResumeBuilderPage() {
               <form onSubmit={addSkill} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
                 <input
                   type="text"
-                  placeholder="Enter a skill (e.g. JavaScript, React, Node.js)"
+                  placeholder="Skill name"
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
                 />
@@ -1496,20 +1554,20 @@ export default function ResumeBuilderPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <input
                           type="text"
-                          placeholder="Certification Name (e.g. AWS Certified Solutions Architect)"
+                          placeholder="Certification name"
                           value={cert.name || ''}
                           onChange={(e) => handleCertChange(idx, 'name', e.target.value)}
                         />
                         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
                           <input
                             type="text"
-                            placeholder="Issuing Organization (e.g. Amazon Web Services)"
+                            placeholder="Issuing organization"
                             value={cert.issuer || ''}
                             onChange={(e) => handleCertChange(idx, 'issuer', e.target.value)}
                           />
                           <input
                             type="text"
-                            placeholder="Year (e.g. 2024)"
+                            placeholder="Year"
                             value={cert.year || ''}
                             onChange={(e) => handleCertChange(idx, 'year', e.target.value)}
                           />
@@ -1680,13 +1738,13 @@ export default function ResumeBuilderPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         <input
                           type="text"
-                          placeholder="Title / Honor (e.g. 1st Place at National Hackathon)"
+                          placeholder="Achievement title"
                           value={ach.title || ''}
                           onChange={(e) => handleAchChange(idx, 'title', e.target.value)}
                         />
                         <textarea
                           rows={2}
-                          placeholder="Details of the achievement..."
+                          placeholder="Describe the achievement..."
                           value={ach.description || ''}
                           onChange={(e) => handleAchChange(idx, 'description', e.target.value)}
                         />
@@ -1715,7 +1773,7 @@ export default function ResumeBuilderPage() {
                     type="text"
                     value={formData.additionalInfo?.languages || ''}
                     onChange={(e) => handleAdditionalChange('languages', e.target.value)}
-                    placeholder="e.g. English (Fluent), Hindi (Native), Spanish (Basic)"
+                    placeholder="Languages"
                   />
                 </div>
 
@@ -1727,7 +1785,7 @@ export default function ResumeBuilderPage() {
                     type="text"
                     value={formData.additionalInfo?.interests || ''}
                     onChange={(e) => handleAdditionalChange('interests', e.target.value)}
-                    placeholder="e.g. Open Source Contribution, Competitive Programming, Tech Writing"
+                    placeholder="Interests"
                   />
                 </div>
               </div>
