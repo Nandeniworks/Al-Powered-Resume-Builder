@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Share = require('../models/Share');
 const Resume = require('../models/Resume');
+const Analytics = require('../models/Analytics');
 
 // POST /api/share - Create a unique share record for an owned resume
 const createShare = async (req, res) => {
@@ -55,6 +56,15 @@ const getShareById = async (req, res) => {
 
     if (!share) {
       return res.status(404).json({ message: 'Share record not found' });
+    }
+
+    // Increment views in Analytics for this resume
+    if (share.resume && share.resume._id) {
+      await Analytics.findOneAndUpdate(
+        { resume: share.resume._id },
+        { $inc: { views: 1 } },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
     }
 
     res.status(200).json(share);

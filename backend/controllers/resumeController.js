@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const PDFDocument = require('pdfkit');
 const Resume = require('../models/Resume');
 const Template = require('../models/Template');
+const Analytics = require('../models/Analytics');
 const {
   renderProfessionalResume,
   renderCreativeEditorialResume,
@@ -267,6 +268,13 @@ const generatePDF = async (req, res) => {
     if (resume.user.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Access denied: You do not own this resume' });
     }
+
+    // Increment downloads in Analytics for this resume
+    await Analytics.findOneAndUpdate(
+      { resume: resume._id },
+      { $inc: { downloads: 1 } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Set PDF response headers
     res.setHeader('Content-Type', 'application/pdf');
