@@ -352,10 +352,11 @@ GET    /api/resumes/:id/pdf
 ### Templates
 
 ```text
-GET  /api/templates
-GET  /api/templates/:id
-POST /api/templates
-PUT  /api/templates/:id
+GET    /api/templates
+GET    /api/templates/:id
+POST   /api/templates
+PUT    /api/templates/:id
+DELETE /api/templates/:id
 ```
 
 ### AI Suggestions

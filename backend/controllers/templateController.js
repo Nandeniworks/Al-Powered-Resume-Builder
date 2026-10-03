@@ -106,9 +106,38 @@ const updateTemplate = async (req, res) => {
   }
 };
 
+// DELETE /api/templates/:id - Delete an existing template (Admin restricted)
+const deleteTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate MongoDB ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid template ID format' });
+    }
+
+    const template = await Template.findById(id);
+
+    if (!template) {
+      return res.status(404).json({ message: 'Template not found' });
+    }
+
+    await Template.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: 'Template deleted successfully',
+      deletedId: id,
+      name: template.name,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getTemplates,
   getTemplateById,
   createTemplate,
   updateTemplate,
+  deleteTemplate,
 };

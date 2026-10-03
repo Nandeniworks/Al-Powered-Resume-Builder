@@ -266,6 +266,24 @@
             },
             "description": "Admin-only endpoint to update an existing template."
           }
+        },
+        {
+          "name": "Delete Template",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/templates/{{templateId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "templates", "{{templateId}}"]
+            },
+            "description": "Admin-only endpoint to delete an existing template."
+          }
         }
       ]
     },

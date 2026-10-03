@@ -9,6 +9,7 @@ export default function AdminTemplatesPage() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [notification, setNotification] = useState('');
 
   const loadTemplates = async () => {
@@ -49,6 +50,23 @@ export default function AdminTemplatesPage() {
       setNotification(`Failed to create template: ${err.message}`);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId, templateName) => {
+    const confirmed = window.confirm(`Are you sure you want to delete template "${templateName}"?`);
+    if (!confirmed) return;
+
+    setDeletingId(templateId);
+    setNotification('');
+    try {
+      await api.delete(`/api/templates/${templateId}`);
+      setNotification(`Template "${templateName}" deleted successfully.`);
+      loadTemplates();
+    } catch (err) {
+      setNotification(`Failed to delete template: ${err.message}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -245,8 +263,51 @@ export default function AdminTemplatesPage() {
                       {tpl.description || 'No description provided.'}
                     </p>
 
-                    <div style={{ fontSize: '0.72rem', color: '#8C7A7B' }}>
-                      ID: <code>{tpl._id}</code>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: '0.85rem',
+                      paddingTop: '0.75rem',
+                      borderTop: '1px solid rgba(216, 196, 172, 0.35)',
+                    }}>
+                      <div style={{ fontSize: '0.72rem', color: '#8C7A7B' }}>
+                        ID: <code>{tpl._id}</code>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTemplate(tpl._id, tpl.name)}
+                        disabled={deletingId === tpl._id}
+                        style={{
+                          backgroundColor: 'rgba(77, 14, 19, 0.08)',
+                          color: 'var(--color-burgundy)',
+                          border: '1px solid rgba(77, 14, 19, 0.25)',
+                          borderRadius: '6px',
+                          padding: '0.32rem 0.75rem',
+                          fontSize: '0.76rem',
+                          fontWeight: 600,
+                          cursor: deletingId === tpl._id ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (deletingId !== tpl._id) {
+                            e.currentTarget.style.backgroundColor = 'var(--color-burgundy)';
+                            e.currentTarget.style.color = '#FFFFFF';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (deletingId !== tpl._id) {
+                            e.currentTarget.style.backgroundColor = 'rgba(77, 14, 19, 0.08)';
+                            e.currentTarget.style.color = 'var(--color-burgundy)';
+                          }
+                        }}
+                      >
+                        <span>🗑</span>
+                        <span>{deletingId === tpl._id ? 'DELETING...' : 'DELETE'}</span>
+                      </button>
                     </div>
                   </div>
                 ))}

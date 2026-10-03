@@ -4,6 +4,7 @@ const {
   getTemplateById,
   createTemplate,
   updateTemplate,
+  deleteTemplate,
 } = require('../controllers/templateController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
@@ -17,5 +18,6 @@ router.get('/:id', getTemplateById);
 // Admin-only template management endpoints
 router.post('/', authMiddleware, roleMiddleware('admin'), createTemplate);
 router.put('/:id', authMiddleware, roleMiddleware('admin'), updateTemplate);
+router.delete('/:id', authMiddleware, roleMiddleware('admin'), deleteTemplate);
 
 module.exports = router;
