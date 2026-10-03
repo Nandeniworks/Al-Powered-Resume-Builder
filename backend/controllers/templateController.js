@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Template = require('../models/Template');
+const { notifyTemplateChange } = require('./notificationController');
 
 // GET /api/templates - Return all templates
 const getTemplates = async (req, res) => {
@@ -49,6 +50,13 @@ const createTemplate = async (req, res) => {
       layout: layout || 'standard',
     });
 
+    // Trigger push notification after template creation succeeds
+    try {
+      await notifyTemplateChange({ action: 'create', template });
+    } catch (notifError) {
+      console.error('[Template Creation Notification Error]:', notifError.message);
+    }
+
     res.status(201).json(template);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -84,6 +92,14 @@ const updateTemplate = async (req, res) => {
     if (layout !== undefined) template.layout = layout;
 
     const updatedTemplate = await template.save();
+
+    // Trigger push notification after template update succeeds
+    try {
+      await notifyTemplateChange({ action: 'update', template: updatedTemplate });
+    } catch (notifError) {
+      console.error('[Template Update Notification Error]:', notifError.message);
+    }
+
     res.status(200).json(updatedTemplate);
   } catch (error) {
     res.status(500).json({ message: error.message });

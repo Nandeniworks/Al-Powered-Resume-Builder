@@ -9,6 +9,10 @@ export default function TailorPage() {
   const [selectedResumeId, setSelectedResumeId] = useState('');
   const [jobDescription, setJobDescription] = useState('');
 
+  // ATS Scoring states
+  const [atsData, setAtsData] = useState(null);
+  const [calculatingATS, setCalculatingATS] = useState(false);
+
   // AI Tailoring states
   const [tailoredData, setTailoredData] = useState(null);
   const [editedTitle, setEditedTitle] = useState('');
@@ -45,6 +49,48 @@ export default function TailorPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // 0. Calculate Deterministic ATS Score
+  const handleCalculateATS = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    if (!selectedResumeId) {
+      setNotification({ type: 'error', message: 'Please select an existing base resume first.' });
+      return;
+    }
+
+    if (!jobDescription.trim()) {
+      setNotification({ type: 'error', message: 'Please enter or paste the target job description.' });
+      return;
+    }
+
+    setCalculatingATS(true);
+    setNotification(null);
+
+    try {
+      const response = await api.post('/api/ai/ats-score', {
+        resume: selectedResumeId,
+        jobDescription: jobDescription.trim(),
+      });
+
+      if (response && typeof response.score === 'number') {
+        setAtsData(response);
+        setNotification({
+          type: 'success',
+          message: `✦ ATS Analysis Complete: ${response.score}% match (${response.matchedKeywords.length}/${response.totalKeywords} target keywords matched).`,
+        });
+      } else {
+        throw new Error('ATS calculation response was incomplete.');
+      }
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err.message || 'Failed to calculate ATS score.',
+      });
+    } finally {
+      setCalculatingATS(false);
+    }
+  };
 
   // 1. Generate Tailored Resume via Gemini
   const handleTailorWithAI = async (e) => {
@@ -404,44 +450,247 @@ export default function TailorPage() {
                     />
                   </div>
 
-                  {/* Action Button: Tailor with AI */}
-                  <button
-                    type="submit"
-                    disabled={tailoring || !selectedResumeId || !jobDescription.trim()}
-                    className="btn-burgundy"
-                    style={{
-                      marginTop: '0.5rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      padding: '0.95rem 1.5rem',
-                      fontSize: '0.88rem',
-                      fontWeight: 700,
-                      letterSpacing: '0.06em',
-                      cursor: tailoring ? 'wait' : 'pointer',
-                      opacity: tailoring ? 0.75 : 1,
-                    }}
-                  >
-                    {tailoring ? (
-                      <>
-                        <span
+                  {/* Action Buttons: Calculate ATS Score & Tailor with AI */}
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handleCalculateATS}
+                      disabled={calculatingATS || !selectedResumeId || !jobDescription.trim()}
+                      style={{
+                        flex: '1 1 200px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        padding: '0.95rem 1.25rem',
+                        fontSize: '0.88rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        cursor: calculatingATS ? 'wait' : 'pointer',
+                        backgroundColor: '#FFFFFF',
+                        border: '1.5px solid var(--color-burgundy, #4D0E13)',
+                        color: 'var(--color-burgundy, #4D0E13)',
+                        borderRadius: '8px',
+                        transition: 'all 0.2s ease',
+                        opacity: calculatingATS || !selectedResumeId || !jobDescription.trim() ? 0.6 : 1,
+                      }}
+                    >
+                      {calculatingATS ? (
+                        <>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '14px',
+                              height: '14px',
+                              border: '2px solid rgba(77,14,19,0.3)',
+                              borderTop: '2px solid var(--color-burgundy, #4D0E13)',
+                              borderRadius: '50%',
+                              animation: 'spin 0.8s linear infinite',
+                            }}
+                          />
+                          CALCULATING ATS SCORE...
+                        </>
+                      ) : (
+                        '✦ CALCULATE ATS SCORE'
+                      )}
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={tailoring || !selectedResumeId || !jobDescription.trim()}
+                      className="btn-burgundy"
+                      style={{
+                        flex: '1 1 200px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        padding: '0.95rem 1.25rem',
+                        fontSize: '0.88rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.06em',
+                        cursor: tailoring ? 'wait' : 'pointer',
+                        opacity: tailoring ? 0.75 : 1,
+                      }}
+                    >
+                      {tailoring ? (
+                        <>
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              width: '14px',
+                              height: '14px',
+                              border: '2px solid rgba(255,255,255,0.3)',
+                              borderTop: '2px solid #FFFFFF',
+                              borderRadius: '50%',
+                              animation: 'spin 0.8s linear infinite',
+                            }}
+                          />
+                          ANALYZING & TAILORING RESUME...
+                        </>
+                      ) : (
+                        '✦ TAILOR WITH AI'
+                      )}
+                    </button>
+                  </div>
+
+                  {/* ATS ANALYSIS RESULTS PANEL */}
+                  {atsData && (
+                    <div
+                      style={{
+                        marginTop: '1.5rem',
+                        backgroundColor: '#FAF7F4',
+                        border: '1.5px solid rgba(77, 14, 19, 0.25)',
+                        borderRadius: '12px',
+                        padding: '1.5rem',
+                        boxShadow: 'var(--shadow-subtle, 0 2px 8px rgba(36, 25, 26, 0.05))',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '1rem',
+                          flexWrap: 'wrap',
+                          gap: '0.75rem',
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.12em',
+                              textTransform: 'uppercase',
+                              color: 'var(--color-burgundy, #4D0E13)',
+                            }}
+                          >
+                            ATS Compatibility Score
+                          </div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted, #7A6F6D)' }}>
+                            Deterministic keyword analysis ({atsData.totalKeywords} target keywords found)
+                          </div>
+                        </div>
+                        <div
                           style={{
-                            display: 'inline-block',
-                            width: '14px',
-                            height: '14px',
-                            border: '2px solid rgba(255,255,255,0.3)',
-                            borderTop: '2px solid #FFFFFF',
-                            borderRadius: '50%',
-                            animation: 'spin 0.8s linear infinite',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.45rem 1.15rem',
+                            borderRadius: '999px',
+                            backgroundColor:
+                              atsData.score >= 80 ? '#E8F5E9' : atsData.score >= 60 ? '#FFF8E1' : '#FFEBEE',
+                            color: atsData.score >= 80 ? '#2E7D32' : atsData.score >= 60 ? '#B78103' : '#C62828',
+                            fontFamily: 'var(--font-serif, "Playfair Display", Georgia, serif)',
+                            fontSize: '1.4rem',
+                            fontWeight: 700,
+                            border: `1px solid ${
+                              atsData.score >= 80 ? '#A5D6A7' : atsData.score >= 60 ? '#FFE082' : '#FFCDD2'
+                            }`,
                           }}
-                        />
-                        ANALYZING & TAILORING RESUME...
-                      </>
-                    ) : (
-                      '✦ TAILOR WITH AI'
-                    )}
-                  </button>
+                        >
+                          <span>{atsData.score}%</span>
+                          <span
+                            style={{
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                            }}
+                          >
+                            {atsData.score >= 80 ? 'Strong Match' : atsData.score >= 60 ? 'Moderate' : 'Low Match'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Matched Keywords */}
+                      <div style={{ marginBottom: '1rem' }}>
+                        <div
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            color: '#2E7D32',
+                            marginBottom: '0.4rem',
+                          }}
+                        >
+                          ✓ Matched Keywords ({atsData.matchedKeywords.length})
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {atsData.matchedKeywords.length > 0 ? (
+                            atsData.matchedKeywords.map((kw, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  backgroundColor: '#E8F5E9',
+                                  color: '#1B5E20',
+                                  border: '1px solid #C8E6C9',
+                                  borderRadius: '6px',
+                                  padding: '0.2rem 0.6rem',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                ✓ {kw}
+                              </span>
+                            ))
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: '0.82rem',
+                                color: 'var(--color-text-muted, #7A6F6D)',
+                                fontStyle: 'italic',
+                              }}
+                            >
+                              No target keywords matched yet.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Missing Keywords */}
+                      <div>
+                        <div
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            color: 'var(--color-burgundy, #4D0E13)',
+                            marginBottom: '0.4rem',
+                          }}
+                        >
+                          ✕ Missing Keywords ({atsData.missingKeywords.length})
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {atsData.missingKeywords.length > 0 ? (
+                            atsData.missingKeywords.map((kw, i) => (
+                              <span
+                                key={i}
+                                style={{
+                                  backgroundColor: 'rgba(77, 14, 19, 0.08)',
+                                  color: 'var(--color-burgundy, #4D0E13)',
+                                  border: '1px solid rgba(77, 14, 19, 0.2)',
+                                  borderRadius: '6px',
+                                  padding: '0.2rem 0.6rem',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                ✕ {kw}
+                              </span>
+                            ))
+                          ) : (
+                            <span style={{ fontSize: '0.82rem', color: '#2E7D32', fontWeight: 600 }}>
+                              ✦ Excellent! All target job keywords are covered in your resume.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </form>
               )}
             </div>

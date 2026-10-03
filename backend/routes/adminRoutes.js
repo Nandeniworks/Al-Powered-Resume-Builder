@@ -2,6 +2,7 @@ const express = require('express');
 const {
   getAdminTemplates,
   getAdminAnalytics,
+  getAdminATSAnalytics,
 } = require('../controllers/adminController');
 const authMiddleware = require('../middleware/authMiddleware');
 const roleMiddleware = require('../middleware/roleMiddleware');
@@ -13,5 +14,7 @@ router.use(authMiddleware, roleMiddleware('admin'));
 
 router.get('/templates', getAdminTemplates);
 router.get('/analytics', getAdminAnalytics);
+router.get('/analytics/ats', getAdminATSAnalytics);
+router.get('/ats-analytics', getAdminATSAnalytics);
 
 module.exports = router;

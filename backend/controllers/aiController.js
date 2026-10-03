@@ -3,6 +3,8 @@ const { GoogleGenAI } = require('@google/genai');
 const AISuggestion = require('../models/AISuggestion');
 const Tailor = require('../models/Tailor');
 const Resume = require('../models/Resume');
+const ATSAnalysis = require('../models/ATSAnalysis');
+const { calculateATS } = require('../utils/atsScorer');
 
 // POST /api/ai/suggestions - Create a suggestion for an owned resume
 const createSuggestion = async (req, res) => {
@@ -455,6 +457,88 @@ const handleSuggestions = async (req, res) => {
   return createSuggestion(req, res);
 };
 
+// POST /api/ai/ats-score - Deterministic ATS scoring simulation
+const calculateATSScore = async (req, res) => {
+  try {
+    const { resume, resumeId, jobDescription, targetKeywords } = req.body;
+    const targetResumeId = resume || resumeId;
+
+    // 1. Validate required fields
+    if (!targetResumeId) {
+      return res.status(400).json({ message: 'Resume ID is required' });
+    }
+
+    if (!jobDescription || !jobDescription.trim()) {
+      return res.status(400).json({ message: 'Job description is required' });
+    }
+
+    // 2. Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(targetResumeId)) {
+      return res.status(400).json({ message: 'Invalid resume ID format' });
+    }
+
+    // 3. Verify resume exists
+    const existingResume = await Resume.findById(targetResumeId);
+    if (!existingResume) {
+      return res.status(404).json({ message: 'Resume not found' });
+    }
+
+    // 4. Verify ownership: user must own the resume
+    if (existingResume.user.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied: You do not own this resume' });
+    }
+
+    // 5. Run deterministic ATS simulation
+    const atsResult = calculateATS({
+      resume: existingResume,
+      jobDescription: jobDescription.trim(),
+      targetKeywords,
+    });
+
+    // 6. Persist ATS analysis record for admin analytics
+    const analysisRecord = await ATSAnalysis.create({
+      user: req.user.id,
+      resume: existingResume._id,
+      jobDescription: jobDescription.trim(),
+      score: atsResult.score,
+      matchedKeywords: atsResult.matchedKeywords,
+      missingKeywords: atsResult.missingKeywords,
+      totalKeywords: atsResult.totalKeywords,
+    });
+
+    // 7. Return structured response
+    return res.status(200).json({
+      score: atsResult.score,
+      matchedKeywords: atsResult.matchedKeywords,
+      missingKeywords: atsResult.missingKeywords,
+      totalKeywords: atsResult.totalKeywords,
+      analysisId: analysisRecord._id,
+      createdAt: analysisRecord.createdAt,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/ai/ats-score - Return user's ATS analyses
+const getUserATSAnalyses = async (req, res) => {
+  try {
+    const { resumeId } = req.query;
+    const query = { user: req.user.id };
+    if (resumeId && mongoose.Types.ObjectId.isValid(resumeId)) {
+      query.resume = resumeId;
+    }
+
+    const analyses = await ATSAnalysis.find(query)
+      .populate('resume', 'title')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(analyses);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createSuggestion,
   getSuggestions,
@@ -462,5 +546,7 @@ module.exports = {
   getTailors,
   generateSuggestion,
   handleSuggestions,
+  calculateATSScore,
+  getUserATSAnalyses,
 };
 

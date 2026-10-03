@@ -163,9 +163,24 @@ Administrative operations are protected using role-based authorization.
 
 ### Notifications
 
-Firebase Cloud Messaging is integrated through Firebase Admin SDK for notification functionality.
+Firebase Cloud Messaging (FCM) is integrated for real-time template update push notifications:
 
-The notification API validates requests and communicates with Firebase Cloud Messaging.
+```text
+Admin template create/update
+          ↓
+backend notifyTemplateChange()
+          ↓
+direct FCM multicast to registered user tokens
+          ↓
+browser push notification
+```
+
+- **Browser Token Registration**: FCM device tokens are registered directly from the browser on the templates page and saved in the user's document (`User.fcmTokens`) via `POST /api/notifications/register-token`.
+- **Direct Token Delivery**: When an administrator creates or updates a resume template, the backend dispatches notifications directly to all stored user device tokens via Firebase Admin SDK `sendEachForMulticast()`.
+- **No Topic Broadcasting**: Direct token delivery is used exclusively; topic subscription and broadcast are not used to avoid duplicate notifications.
+- **Automatic Token Cleanup**: Invalid, expired, or unregistered FCM tokens are automatically pruned from the database.
+- **Verified Delivery**: Browser push notification registration and delivery have been tested and verified across both foreground and background service-worker listeners.
+- **Admin Template Integration**: Admin template management and push notifications are fully integrated into the template CRUD workflows.
 
 ### Socket.io
 
@@ -350,11 +365,13 @@ POST /api/ai/suggestions
 GET  /api/ai/suggestions
 ```
 
-### AI Resume Tailoring
+### AI Resume Tailoring & ATS Scoring
 
 ```text
 POST /api/ai/tailor
 GET  /api/ai/tailor
+POST /api/ai/ats-score
+GET  /api/ai/ats-score
 ```
 
 ### Sharing
@@ -376,11 +393,13 @@ GET /api/analytics/downloads
 ```text
 GET /api/admin/templates
 GET /api/admin/analytics
+GET /api/admin/analytics/ats
 ```
 
 ### Notifications
 
 ```text
+POST /api/notifications/register-token
 POST /api/notifications/send
 ```
 

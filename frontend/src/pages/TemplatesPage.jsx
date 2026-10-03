@@ -2,12 +2,50 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { api } from '../services/api';
+import { setupFCMNotifications, checkNotificationStatus } from '../utils/notifications';
 
 export default function TemplatesPage() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notifStatus, setNotifStatus] = useState(null);
+
+  useEffect(() => {
+    async function checkExistingNotif() {
+      const status = await checkNotificationStatus();
+      if (status.enabled) {
+        setNotifStatus({ success: true, message: status.message });
+      }
+    }
+    checkExistingNotif();
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    setNotifStatus({ loading: true, message: 'Requesting permission & connecting to Firebase...' });
+    const res = await setupFCMNotifications();
+    if (res.success) {
+      setNotifStatus({
+        success: true,
+        message: '✓ Push notifications enabled for template updates!',
+      });
+    } else {
+      let userMsg = res.error || 'Failed to enable push notifications.';
+      if (res.reason === 'permission_denied') {
+        userMsg = 'Notification permission was denied in browser settings.';
+      } else if (res.reason === 'missing_vapid_key') {
+        userMsg = 'VAPID key required: Add VITE_FIREBASE_VAPID_KEY to frontend/.env.';
+      } else if (res.reason === 'unauthenticated') {
+        userMsg = 'Please log in to ResumeCraft before enabling notifications.';
+      }
+      setNotifStatus({
+        success: false,
+        message: userMsg,
+        details: res.error,
+        reason: res.reason,
+      });
+    }
+  };
 
   useEffect(() => {
     async function loadTemplates() {
@@ -78,6 +116,56 @@ export default function TemplatesPage() {
           }}>
             Select a verified typography and layout blueprint from our studio library.
           </p>
+
+          <div style={{ marginTop: '1.25rem' }}>
+            <button
+              onClick={handleEnableNotifications}
+              style={{
+                backgroundColor: notifStatus?.success ? '#E8F5E9' : notifStatus?.reason ? '#FFF2F2' : '#FFFFFF',
+                color: notifStatus?.success ? '#2E7D32' : notifStatus?.reason ? '#C62828' : 'var(--color-burgundy)',
+                border: `1px solid ${notifStatus?.success ? '#A5D6A7' : notifStatus?.reason ? '#FFCDD2' : 'rgba(77, 14, 19, 0.3)'}`,
+                borderRadius: '999px',
+                padding: '0.45rem 1.15rem',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: 'var(--shadow-subtle)',
+              }}
+            >
+              <span>🔔</span>
+              <span>{notifStatus?.message || 'Enable Push Notifications for Template Updates'}</span>
+            </button>
+          </div>
+
+          {notifStatus?.reason === 'missing_vapid_key' && (
+            <div
+              style={{
+                marginTop: '1rem',
+                maxWidth: '640px',
+                margin: '1rem auto 0',
+                padding: '0.85rem 1.25rem',
+                backgroundColor: '#FFF8E1',
+                border: '1px solid #FFE082',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                color: '#7A5200',
+                textAlign: 'left',
+                lineHeight: 1.5,
+              }}
+            >
+              <strong>Firebase Web Push VAPID Key Required:</strong>
+              <div style={{ marginTop: '0.35rem' }}>
+                To enable browser device tokens, obtain your Web Push Certificate key pair from:
+                <br />
+                <code>Firebase Console &rarr; Project Settings &rarr; Cloud Messaging &rarr; Web configuration &rarr; Web Push certificates</code>
+                <br />
+                and set <code>VITE_FIREBASE_VAPID_KEY=&lt;YOUR_PUBLIC_KEY&gt;</code> in <code>frontend/.env</code>.
+              </div>
+            </div>
+          )}
         </div>
 
         {error && (

@@ -360,6 +360,50 @@
             },
             "description": "Retrieves all AI tailoring records created for the authenticated user."
           }
+        },
+        {
+          "name": "Calculate ATS Score",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumeId\": \"{{resumeId}}\",\n  \"jobDescription\": \"Looking for a React developer with JavaScript, Node.js, Express, MongoDB and REST API experience.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/ats-score",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "ats-score"]
+            },
+            "description": "Deterministic ATS score simulation calculating keyword matches against target job description."
+          }
+        },
+        {
+          "name": "Get ATS Analysis History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/ats-score",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "ats-score"]
+            },
+            "description": "Retrieves historical ATS analysis records for the authenticated user."
+          }
         }
       ]
     },
@@ -487,7 +531,25 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "admin", "analytics"]
             },
-            "description": "Admin-only endpoint to inspect all analytics records across the entire platform."
+            "description": "Admin-only endpoint to inspect all analytics records and platform ATS scoring metrics."
+          }
+        },
+        {
+          "name": "Get Admin ATS Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/analytics/ats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "analytics", "ats"]
+            },
+            "description": "Admin-only dedicated endpoint returning platform ATS scoring metrics, score distribution, and recent analyses."
           }
         }
       ]
@@ -520,6 +582,32 @@
               "path": ["api", "notifications", "send"]
             },
             "description": "Sends a Firebase push notification via Firebase Admin Messaging targeting a user's topic (firebaseUid)."
+          }
+        },
+        {
+          "name": "Register FCM Device Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fcmToken\": \"<CLIENT_FCM_REGISTRATION_TOKEN>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/register-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "register-token"]
+            },
+            "description": "Registers client FCM device token to authenticated user for automatic push notification delivery on template updates."
           }
         }
       ]
