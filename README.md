@@ -546,6 +546,8 @@ The exact collection names are managed through the Mongoose models and MongoDB c
 
 ## Environment Variables
 
+### Backend (.env)
+
 Create a `.env` file inside the `backend` directory.
 
 Example:
@@ -559,10 +561,28 @@ GEMINI_API_KEY=your_gemini_api_key
 
 Firebase Admin also requires the Firebase service-account configuration.
 
+### Frontend (.env / Vercel Environment Variables)
+
+Create a `.env` file inside the `frontend` directory (and add to Vercel Project Settings &rarr; Environment Variables for production):
+
+```env
+VITE_API_URL=http://localhost:3000
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_firebase_app_id
+VITE_FIREBASE_VAPID_KEY=your_firebase_web_push_vapid_key
+```
+
+> **Note on Push Notifications**: `VITE_FIREBASE_VAPID_KEY` is required for FCM browser push token registration. Obtain this Web Push certificate key pair from **Firebase Console &rarr; Project Settings &rarr; Cloud Messaging &rarr; Web configuration &rarr; Web Push certificates**. When deploying to Vercel, add `VITE_FIREBASE_VAPID_KEY` under **Project Settings &rarr; Environment Variables**.
+
 Never commit:
 
 ```text
 .env
+*.env
 firebase-service-account.json
 ```
 
