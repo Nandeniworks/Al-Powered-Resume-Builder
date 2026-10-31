@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { api } from '../services/api';
 import AuthLayout from '../components/AuthLayout';
 
 export default function LoginPage() {
+  const [searchParams] = useSearchParams();
+  const isExpired = searchParams.get('expired') === 'true';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -69,6 +72,22 @@ export default function LoginPage() {
           Continue building your resume.
         </p>
       </div>
+
+      {isExpired && !error && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          backgroundColor: 'rgba(216, 196, 172, 0.25)',
+          border: '1px solid var(--color-sand)',
+          borderRadius: '8px',
+          color: 'var(--color-burgundy)',
+          fontSize: '0.85rem',
+          marginBottom: '1.5rem',
+          lineHeight: 1.4,
+          fontWeight: 500,
+        }}>
+          ✦ Your session has expired. Please sign in again to continue.
+        </div>
+      )}
 
       {error && (
         <div style={{
